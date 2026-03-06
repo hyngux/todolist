@@ -1,6 +1,6 @@
 // Gestão de Temas
 function toggleDarkMode() {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
     const next = current === 'dark' ? 'light' : 'dark';
     setTheme(next);
     try {
@@ -12,7 +12,10 @@ function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     const btn = document.getElementById('theme-btn');
     if (btn) {
-        btn.innerText = theme === 'dark' ? "Light Mode" : "Dark Mode";
+        const isDark = theme === 'dark';
+        btn.setAttribute('aria-pressed', String(isDark));
+        const label = btn.querySelector('.toggle-text');
+        if (label) label.textContent = isDark ? 'Light' : 'Dark';
     }
 }
 
@@ -40,9 +43,16 @@ function showSection(id, el) {
     document.getElementById('section-' + id).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     el.classList.add('active');
+    syncSectionCommandbar(id);
     
     if(id === 'overview') updateOverview();
     loadAll();
+}
+
+function syncSectionCommandbar(sectionId) {
+    document.querySelectorAll('.section-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.section === sectionId);
+    });
 }
 
 // SALVAR DADOS
@@ -280,7 +290,7 @@ function loadAll() {
 
 // Inicialização
 window.onload = () => {
-    let currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    let currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
     try {
         const saved = localStorage.getItem('hyxmind_theme');
         if (saved) currentTheme = saved;
@@ -297,44 +307,29 @@ window.onload = () => {
     const uptimeEl = document.getElementById("daily-uptime");
 
     function updateNeuralLoad() {
-        const value = Math.floor(Math.random() * 61) + 20; // 20–80%
+        const now = new Date();
+        const elapsedSeconds = now.getMinutes() * 60 + now.getSeconds();
+        const value = Math.min(100, Math.round((elapsedSeconds / 3600) * 100));
         if (loadBar) loadBar.style.width = value + "%";
         if (loadVal) loadVal.textContent = value + "%";
     }
 
     function updateUptime() {
         const now = new Date();
-        const hours = now.getHours();
-        if (uptimeEl) uptimeEl.textContent = hours + "h";
-    }
-
-    const dayStrip = document.querySelectorAll("#mini-day-picker .day-strip span");
-    const today = new Date().getDay(); // 0=Sun
-    dayStrip.forEach(el => {
-        if (Number(el.dataset.day) === today) el.classList.add("active");
-    });
-
-    const syncBtn = document.getElementById("quick-sync-btn");
-    if (syncBtn) {
-        syncBtn.addEventListener("click", () => console.log("Sync triggered"));
-    }
-
-    const resetBtn = document.getElementById("reset-view-btn");
-    if (resetBtn) {
-        resetBtn.addEventListener("click", () => {
-            const overviewNav = document.querySelector(".nav-item[onclick*=\"overview\"]") || document.querySelector(".nav-item");
-            if (overviewNav) showSection("overview", overviewNav);
-        });
+        if (uptimeEl) uptimeEl.textContent = `${String(now.getMinutes()).padStart(2, '0')}m`;
     }
 
     updateNeuralLoad();
     updateUptime();
-    setInterval(updateNeuralLoad, 10000);
-    setInterval(updateUptime, 60000);
+    setInterval(updateNeuralLoad, 1000);
+    setInterval(updateUptime, 1000);
 })();
 
 // --- Productivity system ---
 const TASK_ORDER_KEY = "hyxmind_task_order";
+const DAY_MS = 24 * 60 * 60 * 1000;
+const TWO_DAYS_MS = 2 * DAY_MS;
+let habitsTicking = false;
 
 function startOfDay(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -359,15 +354,25 @@ async function renderHabits() {
 
     habits.forEach(h => {
         const safeHabitName = escapeHtml(h.name || '');
+        const cooldown = getHabitCooldownMs(h);
+        const locked = cooldown > 0;
+        const buttonText = locked ? `Wait ${formatCountdown(cooldown)}` : "Done";
+        const helperText = getHabitHelperText(h, cooldown);
         const row = document.createElement("div");
         row.className = "habit-row";
+        const nextAt = parseHabitDate(h.next_available_at);
+        const expiresAt = parseHabitDate(h.expires_at);
+        if (nextAt) row.dataset.nextAt = String(nextAt.getTime());
+        if (expiresAt) row.dataset.expiresAt = String(expiresAt.getTime());
+        row.dataset.streak = String(h.streak || 0);
         row.innerHTML = `
             <div class="habit-info">
                 <div class="habit-name">${safeHabitName}</div>
                 <div class="habit-streak">Streak: ${h.streak} days</div>
+                <div class="habit-timer">${escapeHtml(helperText)}</div>
             </div>
             <div class="habit-actions">
-                <button class="habit-btn" type="button">Done</button>
+                <button class="habit-btn" type="button" ${locked ? "disabled" : ""}>${escapeHtml(buttonText)}</button>
                 <button class="habit-del" type="button">Delete</button>
             </div>
         `;
@@ -375,6 +380,11 @@ async function renderHabits() {
         row.querySelector(".habit-del").addEventListener("click", () => deleteHabit(h.id));
         list.appendChild(row);
     });
+
+    if (!habitsTicking) {
+        habitsTicking = true;
+        setInterval(renderHabitsLiveTimers, 1000);
+    }
 }
 
 async function addHabit() {
@@ -399,7 +409,10 @@ async function addHabit() {
 
 async function completeHabit(id) {
     try {
-        await authFetch(`/api/habits/${id}/complete`, { method: 'PATCH' });
+        const res = await authFetch(`/api/habits/${id}/complete`, { method: 'PATCH' });
+        if (!res.ok && res.status !== 409) {
+            throw new Error('Failed to complete habit');
+        }
         renderHabits();
         updateProductivityCard();
     } catch (err) {
@@ -463,6 +476,89 @@ async function updateProductivityCard() {
     activeEl.textContent = active;
     streakEl.textContent = `${maxStreak} days`;
     focusEl.textContent = `${focus}%`;
+}
+
+function parseHabitDate(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date;
+    const fallback = new Date(String(value).replace(' ', 'T'));
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function getHabitCooldownMs(habit) {
+    if (typeof habit.remaining_ms === 'number') return Math.max(0, habit.remaining_ms);
+    const last = parseHabitDate(habit.last_completed);
+    if (!last) return 0;
+    return Math.max(0, DAY_MS - (Date.now() - last.getTime()));
+}
+
+function getHabitHelperText(habit, cooldownMs) {
+    const last = parseHabitDate(habit.last_completed);
+    if (!last) return "First check-in starts your streak.";
+    if (cooldownMs > 0) return `Next streak in ${formatCountdown(cooldownMs)}.`;
+    const elapsed = Date.now() - last.getTime();
+    if (elapsed >= TWO_DAYS_MS) return "Missed 48h window. Streak resets on next done.";
+    const expires = TWO_DAYS_MS - elapsed;
+    return `Window closes in ${formatCountdown(expires)}.`;
+}
+
+function formatCountdown(ms) {
+    const total = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
+    return `${m}m ${String(s).padStart(2, '0')}s`;
+}
+
+function renderHabitsLiveTimers() {
+    document.querySelectorAll('.habit-row').forEach(row => {
+        const timerEl = row.querySelector('.habit-timer');
+        const button = row.querySelector('.habit-btn');
+        if (!timerEl || !button) return;
+
+        const nextAtMs = Number(row.dataset.nextAt || 0);
+        const expiresAtMs = Number(row.dataset.expiresAt || 0);
+        const streak = Number(row.dataset.streak || 0);
+
+        if (!nextAtMs) return;
+
+        const now = Date.now();
+        const cooldown = Math.max(0, nextAtMs - now);
+        if (cooldown > 0) {
+            timerEl.textContent = `Next streak in ${formatCountdown(cooldown)}.`;
+            button.textContent = `Wait ${formatCountdown(cooldown)}`;
+            button.disabled = true;
+            return;
+        }
+
+        if (expiresAtMs && now > expiresAtMs) {
+            timerEl.textContent = "Missed 48h window. Streak resets on next done.";
+            button.textContent = "Done";
+            button.disabled = false;
+            const streakEl = row.querySelector('.habit-streak');
+            if (streakEl) streakEl.textContent = `Streak: 0 days`;
+            row.dataset.streak = '0';
+            return;
+        }
+
+        if (expiresAtMs) {
+            timerEl.textContent = `Window closes in ${formatCountdown(expiresAtMs - now)}.`;
+        } else {
+            timerEl.textContent = `Current streak: ${streak} days.`;
+        }
+        button.textContent = "Done";
+        button.disabled = false;
+    });
+}
+
+function initCalendarShortcut() {
+    const openLinkBtn = document.getElementById('calendar-open-link');
+    if (!openLinkBtn) return;
+    openLinkBtn.addEventListener('click', () => {
+        window.location.href = '/calendar.html';
+    });
 }
 
 function getTaskOrder() {
@@ -592,16 +688,101 @@ function getDragAfterElement(container, y) {
 
 async function loadUserProfile() {
     const nameEl = document.getElementById('profile-name');
+    const subEl = document.getElementById('profile-sub');
     try {
         const res = await fetch('/auth/me');
         if (!res.ok) return;
         const data = await res.json();
+        let username = '';
         if (nameEl && data.user && data.user.username) {
-            nameEl.textContent = data.user.username;
+            username = data.user.username;
+            nameEl.textContent = username;
         }
+
+        const prefs = readProfilePrefs();
+        if (nameEl && prefs.name) nameEl.textContent = prefs.name;
+        if (subEl) subEl.textContent = prefs.sub || 'Welcome back';
+
+        const inputName = document.getElementById('profile-settings-name');
+        const inputSub = document.getElementById('profile-settings-sub');
+        if (inputName) inputName.value = prefs.name || username || '';
+        if (inputSub) inputSub.value = prefs.sub || 'Welcome back';
     } catch (err) {
+        const prefs = readProfilePrefs();
+        if (nameEl && prefs.name) nameEl.textContent = prefs.name;
+        if (subEl) subEl.textContent = prefs.sub || 'Welcome back';
+        const inputName = document.getElementById('profile-settings-name');
+        const inputSub = document.getElementById('profile-settings-sub');
+        if (inputName) inputName.value = prefs.name || '';
+        if (inputSub) inputSub.value = prefs.sub || 'Welcome back';
         console.error('Erro ao carregar utilizador:', err);
     }
+}
+
+function readProfilePrefs() {
+    try {
+        return JSON.parse(localStorage.getItem('hyxmind_profile_prefs') || '{}');
+    } catch {
+        return {};
+    }
+}
+
+function writeProfilePrefs(prefs) {
+    try {
+        localStorage.setItem('hyxmind_profile_prefs', JSON.stringify(prefs));
+    } catch {}
+}
+
+function initProfileSettings() {
+    const settingsBtn = document.getElementById('profile-settings-btn');
+    const panel = document.getElementById('profile-settings');
+    const saveBtn = document.getElementById('profile-settings-save');
+    const inputName = document.getElementById('profile-settings-name');
+    const inputSub = document.getElementById('profile-settings-sub');
+    const nameEl = document.getElementById('profile-name');
+    const subEl = document.getElementById('profile-sub');
+    const card = document.getElementById('user-profile');
+    if (!settingsBtn || !panel || !saveBtn || !nameEl || !subEl || !card) return;
+
+    const closePanel = () => {
+        panel.classList.remove('open');
+        panel.setAttribute('aria-hidden', 'true');
+        settingsBtn.setAttribute('aria-expanded', 'false');
+    };
+
+    const openPanel = () => {
+        panel.classList.add('open');
+        panel.setAttribute('aria-hidden', 'false');
+        settingsBtn.setAttribute('aria-expanded', 'true');
+    };
+
+    settingsBtn.addEventListener('click', () => {
+        if (panel.classList.contains('open')) closePanel();
+        else openPanel();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!card.contains(e.target)) closePanel();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closePanel();
+    });
+
+    saveBtn.addEventListener('click', () => {
+        const name = inputName ? inputName.value.trim() : '';
+        const sub = inputSub ? inputSub.value.trim() : '';
+        if (name) nameEl.textContent = name;
+        subEl.textContent = sub || 'Welcome back';
+        writeProfilePrefs({ name, sub });
+        saveBtn.textContent = 'Saved';
+        saveBtn.disabled = true;
+        setTimeout(() => {
+            saveBtn.textContent = 'Save';
+            saveBtn.disabled = false;
+        }, 1000);
+        closePanel();
+    });
 }
 
 function initLogout() {
@@ -615,6 +796,21 @@ function initLogout() {
             console.error('Erro ao sair:', err);
         }
     });
+}
+
+function initSectionCommandbar() {
+    document.querySelectorAll('.section-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const section = btn.dataset.section;
+            const navItem = document.querySelector(`.nav-item[onclick*="${section}"]`);
+            if (section && navItem) showSection(section, navItem);
+        });
+    });
+
+    const activeSection = document.querySelector('.content-section.active');
+    if (activeSection && activeSection.id.startsWith('section-')) {
+        syncSectionCommandbar(activeSection.id.replace('section-', ''));
+    }
 }
 
 const _loadList = loadList;
@@ -646,6 +842,9 @@ deleteItem = async function(id, cat) {
 window.addEventListener("load", () => {
     loadUserProfile();
     initLogout();
+    initProfileSettings();
+    initSectionCommandbar();
+    initCalendarShortcut();
     renderHabits();
     updateProductivityCard();
     initTaskDragAndDrop();

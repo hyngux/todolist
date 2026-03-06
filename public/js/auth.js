@@ -1,3 +1,10 @@
+try {
+    const savedTheme = localStorage.getItem('hyxmind_theme');
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+} catch {}
+
 async function postJson(url, body) {
     const res = await fetch(url, {
         method: 'POST',

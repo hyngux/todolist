@@ -4,19 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>hyx | Personal Space</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <div class="theme-toggle" id="theme-btn" onclick="toggleDarkMode()">Dark Mode</div>
+    <button
+        class="theme-toggle"
+        id="theme-btn"
+        type="button"
+        aria-label="Toggle dark mode"
+        aria-pressed="false"
+        onclick="toggleDarkMode()"
+    >
+        <span class="toggle-track" aria-hidden="true">
+            <span class="toggle-thumb"></span>
+        </span>
+        <span class="toggle-text">Dark</span>
+    </button>
 
     <nav>
         <div class="logo">Hyx's</div>
         <div class="profile-card" id="user-profile">
-            <div class="profile-name" id="profile-name">User</div>
-            <div class="profile-sub">Welcome back</div>
-            <button class="profile-logout" id="logout-btn" type="button">Logout</button>
+            <div class="profile-head">
+                <div class="profile-avatar" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="8" r="4"></circle>
+                        <path d="M4 20c1.6-3.4 4.6-5 8-5s6.4 1.6 8 5"></path>
+                    </svg>
+                </div>
+                <div class="profile-copy">
+                    <div class="profile-name" id="profile-name">User</div>
+                    <div class="profile-sub" id="profile-sub">Welcome back</div>
+                </div>
+                <div class="profile-actions">
+                    <button class="profile-icon-btn" id="profile-settings-btn" type="button" aria-label="Profile settings" aria-expanded="false">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1A1.7 1.7 0 0 0 10 3.1V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path>
+                        </svg>
+                    </button>
+                    <button class="profile-icon-btn profile-logout" id="logout-btn" type="button" aria-label="Logout">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M14 7v-3h-9v16h9v-3"></path>
+                            <path d="M10 12h11"></path>
+                            <path d="M18 8l4 4-4 4"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="profile-settings" id="profile-settings" aria-hidden="true">
+                <label class="profile-settings-label" for="profile-settings-name">Display Name</label>
+                <input id="profile-settings-name" class="input-minimal" type="text" placeholder="Your name">
+                <label class="profile-settings-label" for="profile-settings-sub">Welcome Text</label>
+                <input id="profile-settings-sub" class="input-minimal" type="text" placeholder="Welcome back">
+                <div class="profile-settings-actions">
+                    <button class="btn-submit" id="profile-settings-save" type="button">Save</button>
+                </div>
+            </div>
         </div>
         <div class="nav-item active" onclick="showSection('overview', this)">Overview</div>
         <div class="nav-item" onclick="showSection('journal', this)">Journal</div>
@@ -38,33 +82,35 @@
         </div>
 
         <div class="sidebar-widget" id="mini-day-picker">
-            <div class="widget-title">DAY PICKER</div>
-            <div class="day-strip" aria-label="Week days">
-                <span data-day="1">M</span>
-                <span data-day="2">T</span>
-                <span data-day="3">W</span>
-                <span data-day="4">T</span>
-                <span data-day="5">F</span>
-                <span data-day="6">S</span>
-                <span data-day="0">S</span>
-            </div>
+            <div class="widget-title">Calendar</div>
+            <button class="btn-ghost calendar-open-link" id="calendar-open-link" type="button">Open Full Calendar</button>
         </div>
 
-        <div class="sidebar-widget sidebar-actions">
-            <div class="widget-title">QUICK ACTIONS</div>
-            <button class="quick-btn" id="quick-sync-btn" type="button">Quick Sync</button>
-            <button class="icon-btn" id="reset-view-btn" type="button" aria-label="Reset View">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M3 12a9 9 0 1 0 3-6.7" />
-                    <path d="M3 3v6h6" />
-                </svg>
-            </button>
-        </div>
     </nav>
 
     <main>
+        <div class="section-commandbar" aria-label="Sections">
+            <div class="section-pills">
+                <button class="section-pill active" type="button" data-section="overview">Overview</button>
+                <button class="section-pill" type="button" data-section="journal">Journal</button>
+                <button class="section-pill" type="button" data-section="tasks">Tasks</button>
+            </div>
+        </div>
+
         <div id="section-overview" class="content-section active">
-             <div class="dashboard-grid">
+            <div class="today-header card">
+                <div>
+                    <h2>Today</h2>
+                    <div class="today-greeting" id="today-greeting">Good day</div>
+                </div>
+                <div class="holographic-container">
+                    <div class="holographic-card">
+                        <span class="holographic-kicker">Today</span>
+                        <div class="today-date" id="today-date"></div>
+                    </div>
+                </div>
+            </div>
+             <div class="dashboard-grid overview-top-grid">
                 <div class="card">
                     <h2>Recent Mindset</h2>
                     <div id="overview-recent" style="color: var(--text-dim); font-size: 14px;">Nada registado.</div>
@@ -94,6 +140,40 @@
                     </div>
                 </div>
             </div>
+            <div class="dashboard-grid today-grid">
+                <div class="card today-card">
+                    <div class="today-card-head">
+                        <h2>Today's Tasks</h2>
+                        <span class="today-inline-status" id="today-tasks-status">Waiting for sync</span>
+                    </div>
+                    <p class="today-subtitle">Actionable focus list for this date.</p>
+                    <div id="today-tasks-list" class="today-tasks-list">
+                        <p class="today-placeholder">No tasks for today yet.</p>
+                    </div>
+                </div>
+                <div class="card today-card">
+                    <div class="today-card-head">
+                        <h2>Daily Journal</h2>
+                        <span class="today-inline-status" id="today-journal-status">Not saved yet</span>
+                    </div>
+                    <p class="today-subtitle">Short reflection about mood, wins, and lessons.</p>
+                    <textarea id="today-journal-input" class="input-minimal today-textarea" placeholder="How did today feel?"></textarea>
+                    <div class="task-actions">
+                        <button id="today-journal-save" class="btn-submit" type="button">Save Reflection</button>
+                    </div>
+                </div>
+                <div class="card today-card">
+                    <div class="today-card-head">
+                        <h2>Quick Notes</h2>
+                        <span class="today-inline-status" id="today-note-status">Not saved yet</span>
+                    </div>
+                    <p class="today-subtitle">Capture ideas before they disappear.</p>
+                    <textarea id="today-note-input" class="input-minimal today-textarea" placeholder="Capture quick thoughts..."></textarea>
+                    <div class="task-actions">
+                        <button id="today-note-save" class="btn-submit" type="button">Save Note</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="section-journal" class="content-section">
@@ -101,8 +181,8 @@
                 <div class="card">
                     <h2>Daily Journal</h2>
                     <div class="journal-inputs-container">
-                        <input type="text" id="journalTitle" class="input-minimal-journal" placeholder="Título do tópico...">
-                        <textarea id="journalContent" class="input-minimal-journal" style="min-height:80px; resize:none;" placeholder="Desenvolve o pensamento..."></textarea>
+                        <input type="text" id="journalTitle" class="input-minimal-journal" placeholder="Title">
+                        <textarea id="journalContent" class="input-minimal-journal" style="min-height:80px; resize:none;" placeholder="Description"></textarea>
                     </div>
                     <div style="display:flex; justify-content: flex-end; margin-top: 10px;">
                         <button class="btn-submit" onclick="saveData('journal')">Submit Journal</button>
@@ -123,10 +203,10 @@
         <div id="section-tasks" class="content-section">
             <div class="dashboard-grid" style="grid-template-columns: 1fr;">
                 <div class="card">
-                    <h2>Intentions & Tasks</h2>
+                    <h2>Niyyah</h2>
                     <div class="task-inputs-container">
-                        <input type="text" id="tarefaTitle" class="input-minimal" placeholder="Título da intenção..." onkeypress="if(event.key==='Enter') saveData('tarefa')">
-                        <textarea id="tarefaContent" class="input-minimal task-body" rows="3" placeholder="Detalhes ou subtítulo..." onkeypress="if(event.key==='Enter') saveData('tarefa')"></textarea>
+                        <input type="text" id="tarefaTitle" class="input-minimal" placeholder="Title" onkeypress="if(event.key==='Enter') saveData('tarefa')">
+                        <textarea id="tarefaContent" class="input-minimal task-body" rows="3" placeholder="Description" onkeypress="if(event.key==='Enter') saveData('tarefa')"></textarea>
                         <div class="task-actions">
                             <button class="btn-submit" onclick="saveData('tarefa')">Add Task</button>
                         </div>
@@ -136,7 +216,7 @@
                 <div class="card" id="habits-card">
                     <h2>Habits</h2>
                     <div class="side-input-group">
-                        <input type="text" id="habit-name" class="input-minimal" placeholder="Novo hábito..." onkeypress="if(event.key==='Enter') addHabit()">
+                        <input type="text" id="habit-name" class="input-minimal" placeholder="New habit" onkeypress="if(event.key==='Enter') addHabit()">
                         <button class="btn-submit" onclick="addHabit()">Add Habit</button>
                     </div>
                     <div id="habit-list" class="entries-container"></div>
@@ -156,6 +236,33 @@
         </div>
     </div>
 
+    <button class="quick-capture-btn" id="quick-capture-btn" type="button" aria-label="Open quick capture">+</button>
+    <div class="quick-capture-modal" id="quick-capture-modal" aria-hidden="true">
+        <div class="quick-capture-panel">
+            <h3>Quick Capture</h3>
+            <div class="quick-capture-grid">
+                <input id="quick-capture-task" class="input-minimal" type="text" placeholder="Quick task...">
+                <textarea id="quick-capture-note" class="input-minimal today-textarea" placeholder="Quick note..."></textarea>
+            </div>
+            <div class="confirm-actions">
+                <button class="btn-ghost" id="quick-capture-cancel" type="button">Cancel</button>
+                <button class="btn-submit" id="quick-capture-save" type="button">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="task-detail-modal" id="task-detail-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="task-detail-title">
+        <div class="task-detail-panel">
+            <div class="task-detail-head">
+                <h3 id="task-detail-title">Task Details</h3>
+                <button class="task-detail-close" id="task-detail-close" type="button" aria-label="Close task details">✕</button>
+            </div>
+            <div class="task-detail-meta" id="task-detail-meta">Today</div>
+            <p class="task-detail-description" id="task-detail-description"></p>
+        </div>
+    </div>
+
     <script src="js/main.js"></script>
+    <script src="js/quick-capture.js"></script>
 </body>
 </html>

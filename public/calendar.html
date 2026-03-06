@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>hyx | Calendar</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="calendar-page">
+    <div class="calendar-bg-orb orb-a" aria-hidden="true"></div>
+    <div class="calendar-bg-orb orb-b" aria-hidden="true"></div>
+    <div class="calendar-bg-orb orb-c" aria-hidden="true"></div>
+
+    <button class="theme-toggle" id="theme-btn" type="button" aria-label="Toggle dark mode" aria-pressed="false">
+        <span class="toggle-track" aria-hidden="true">
+            <span class="toggle-thumb"></span>
+        </span>
+        <span class="toggle-text">Dark</span>
+    </button>
+
+    <main class="calendar-main">
+        <section class="calendar-shell card">
+            <div class="calendar-topbar">
+                <a class="btn-ghost calendar-back" href="/">Back to Dashboard</a>
+                <div class="calendar-title-wrap">
+                    <h1 class="calendar-page-title">Calendar</h1>
+                </div>
+                <div class="calendar-nav">
+                    <button class="icon-btn" id="calendar-page-prev" type="button" aria-label="Previous month">
+                        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg>
+                    </button>
+                    <div class="calendar-page-month" id="calendar-page-month">Month Year</div>
+                    <button class="icon-btn" id="calendar-page-next" type="button" aria-label="Next month">
+                        <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="calendar-layout">
+                <div class="calendar-large-grid-wrap">
+                    <div class="calendar-large-grid" id="calendar-large-grid"></div>
+                </div>
+
+                <aside class="calendar-side card">
+                    <h2 id="calendar-side-date">Selected day</h2>
+                    <div class="calendar-entry-form">
+                        <input class="input-minimal calendar-title" id="calendar-page-title" type="text" placeholder="Task title">
+                        <input class="input-minimal calendar-due-time" id="calendar-page-time" type="time">
+                        <textarea class="input-minimal calendar-desc" id="calendar-page-desc" rows="3" placeholder="Description"></textarea>
+                        <button class="btn-submit calendar-save-btn" id="calendar-page-save" type="button">Save Task</button>
+                    </div>
+                    <div class="calendar-day-list calendar-large-list" id="calendar-page-list"></div>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/calendar.js"></script>
+</body>
+</html>
