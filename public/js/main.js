@@ -25,6 +25,15 @@ async function authFetch(url, options) {
     return res;
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Navegação
 function showSection(id, el) {
     document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
@@ -89,13 +98,16 @@ async function loadList(cat) {
             
             const hasBody = (cat === 'journal' || cat === 'tarefa');
             const displayTitle = (hasBody && e.title) ? e.title : e.content;
+            const safeDisplayTitle = escapeHtml(displayTitle);
+            const safeContent = escapeHtml(e.content || '');
+            const safeTitle = escapeHtml(e.title || '');
 
             return `
                 <div class="entry-row" id="row-${e.id}">
                     <div class="entry-header" onclick="${hasBody ? `document.getElementById('row-${e.id}').classList.toggle('open')` : ''}">
                         <div class="entry-main-info">
                             <div class="circle-check ${e.status == 1 ? 'done' : ''}" onclick="event.stopPropagation(); toggleTask(${e.id}, '${cat}')"></div>
-                            <span class="entry-text" style="${e.status == 1 ? 'text-decoration:line-through;opacity:0.5' : ''}">${displayTitle}</span>
+                            <span class="entry-text" style="${e.status == 1 ? 'text-decoration:line-through;opacity:0.5' : ''}">${safeDisplayTitle}</span>
                         </div>
                         <div class="entry-meta">
                             <span class="badge-date">${dStr}</span>
@@ -104,13 +116,13 @@ async function loadList(cat) {
                             <button class="btn-del" onclick="event.stopPropagation(); deleteItem(${e.id}, '${cat}')">DEL</button>
                         </div>
                     </div>
-                    ${hasBody ? `<div class="entry-body">${e.content}</div>` : ''}
+                    ${hasBody ? `<div class="entry-body">${safeContent}</div>` : ''}
                     <div class="entry-edit" id="edit-${e.id}">
                         ${(cat === 'journal' || cat === 'tarefa') ? `
-                            <input type="text" class="input-minimal edit-title" value="${e.title || ''}" placeholder="Título...">
-                            <textarea class="input-minimal edit-body" rows="3" placeholder="Conteúdo...">${e.content || ''}</textarea>
+                            <input type="text" class="input-minimal edit-title" value="${safeTitle}" placeholder="Título...">
+                            <textarea class="input-minimal edit-body" rows="3" placeholder="Conteúdo...">${safeContent}</textarea>
                         ` : `
-                            <input type="text" class="input-minimal edit-content" value="${e.content || ''}" placeholder="Editar...">
+                            <input type="text" class="input-minimal edit-content" value="${safeContent}" placeholder="Editar...">
                         `}
                         <div class="edit-actions">
                             <button class="btn-ghost" onclick="event.stopPropagation(); cancelEdit(${e.id})">Cancel</button>
@@ -131,12 +143,73 @@ async function toggleTask(id, cat) {
     updateOverview();
 }
 
+let confirmDialogReady = false;
+
+function initConfirmDialog() {
+    if (confirmDialogReady) return;
+
+    const modal = document.getElementById('confirm-modal');
+    const cancelBtn = document.getElementById('confirm-cancel');
+    const okBtn = document.getElementById('confirm-ok');
+    if (!modal || !cancelBtn || !okBtn) return;
+
+    const resolveAndClose = (value) => {
+        const resolver = modal._resolver;
+        modal._resolver = null;
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        if (resolver) resolver(value);
+    };
+
+    cancelBtn.addEventListener('click', () => resolveAndClose(false));
+    okBtn.addEventListener('click', () => resolveAndClose(true));
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) resolveAndClose(false);
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('open')) {
+            resolveAndClose(false);
+        }
+    });
+
+    confirmDialogReady = true;
+}
+
+function confirmAction({ title, message, confirmText = 'Delete', cancelText = 'Cancel' }) {
+    initConfirmDialog();
+    const modal = document.getElementById('confirm-modal');
+    if (!modal) return Promise.resolve(window.confirm(message || title || 'Confirmar ação?'));
+
+    const titleEl = document.getElementById('confirm-title');
+    const messageEl = document.getElementById('confirm-message');
+    const cancelBtn = document.getElementById('confirm-cancel');
+    const okBtn = document.getElementById('confirm-ok');
+
+    if (titleEl) titleEl.textContent = title || 'Confirmar ação';
+    if (messageEl) messageEl.textContent = message || 'Queres continuar?';
+    if (cancelBtn) cancelBtn.textContent = cancelText;
+    if (okBtn) okBtn.textContent = confirmText;
+
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+
+    return new Promise(resolve => {
+        modal._resolver = resolve;
+    });
+}
+
 async function deleteItem(id, cat) {
-    if(confirm("Apagar permanentemente?")) {
-        await authFetch(`/api/entries/${id}?category=${encodeURIComponent(cat)}`, { method: 'DELETE' });
-        loadList(cat);
-        updateOverview();
-    }
+    const confirmed = await confirmAction({
+        title: 'Apagar item',
+        message: 'Este item vai ser removido permanentemente.',
+        confirmText: 'Apagar',
+        cancelText: 'Cancelar'
+    });
+    if (!confirmed) return;
+
+    await authFetch(`/api/entries/${id}?category=${encodeURIComponent(cat)}`, { method: 'DELETE' });
+    loadList(cat);
+    updateOverview();
 }
 
 function startEdit(id, cat) {
@@ -156,7 +229,7 @@ async function saveEdit(id, cat) {
     if (!row) return;
 
     let payload = {};
-    if (cat === 'journal') {
+    if (cat === 'journal' || cat === 'tarefa') {
         const titleEl = row.querySelector('.edit-title');
         const bodyEl = row.querySelector('.edit-body');
         payload = {
@@ -285,16 +358,21 @@ async function renderHabits() {
     list.innerHTML = "";
 
     habits.forEach(h => {
+        const safeHabitName = escapeHtml(h.name || '');
         const row = document.createElement("div");
         row.className = "habit-row";
         row.innerHTML = `
             <div class="habit-info">
-                <div class="habit-name">${h.name}</div>
+                <div class="habit-name">${safeHabitName}</div>
                 <div class="habit-streak">Streak: ${h.streak} days</div>
             </div>
-            <button class="habit-btn" type="button">Done</button>
+            <div class="habit-actions">
+                <button class="habit-btn" type="button">Done</button>
+                <button class="habit-del" type="button">Delete</button>
+            </div>
         `;
         row.querySelector(".habit-btn").addEventListener("click", () => completeHabit(h.id));
+        row.querySelector(".habit-del").addEventListener("click", () => deleteHabit(h.id));
         list.appendChild(row);
     });
 }
@@ -326,6 +404,24 @@ async function completeHabit(id) {
         updateProductivityCard();
     } catch (err) {
         console.error("Erro ao completar hábito:", err);
+    }
+}
+
+async function deleteHabit(id) {
+    const confirmed = await confirmAction({
+        title: 'Apagar hábito',
+        message: 'Este hábito vai ser removido permanentemente.',
+        confirmText: 'Apagar',
+        cancelText: 'Cancelar'
+    });
+    if (!confirmed) return;
+
+    try {
+        await authFetch(`/api/habits/${id}`, { method: 'DELETE' });
+        renderHabits();
+        updateProductivityCard();
+    } catch (err) {
+        console.error("Erro ao apagar hábito:", err);
     }
 }
 

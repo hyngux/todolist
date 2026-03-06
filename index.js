@@ -52,3 +52,21 @@ app.get('/login', (req, res) => {
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'register', 'index.html'));
 });
+
+app.get('/', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/:any', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log('HYXMIND SYSTEM ONLINE');
+    console.log(`Local: http://localhost:${PORT}`);
+    console.log(`Network: http://0.0.0.0:${PORT}`);
+});
