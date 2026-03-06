@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>HYXMIND | Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="auth-body">
+    <div class="auth-shell">
+        <div class="auth-card">
+            <div class="logo auth-logo">HYXMIND</div>
+            <h1 class="auth-title">Criar conta</h1>
+            <p class="auth-sub">Regista-te para começares.</p>
+
+            <form id="register-form" class="auth-form">
+                <label class="auth-label">Username</label>
+                <input type="text" name="username" class="input-minimal" placeholder="Diogo" required>
+
+                <label class="auth-label">Email</label>
+                <input type="email" name="email" class="input-minimal" placeholder="teu@email.com" required>
+
+                <label class="auth-label">Password</label>
+                <input type="password" name="password" class="input-minimal" placeholder="Min 8 caracteres" minlength="8" required>
+
+                <button type="submit" class="btn-submit auth-submit">Criar conta</button>
+                <div class="auth-error" id="register-error"></div>
+            </form>
+
+            <div class="auth-footer">
+                <span>Já tens conta?</span>
+                <a href="/login">Fazer login</a>
+            </div>
+        </div>
+    </div>
+    <script src="/js/auth.js"></script>
+</body>
+</html>

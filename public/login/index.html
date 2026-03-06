@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>HYXMIND | Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="auth-body">
+    <div class="auth-shell">
+        <div class="auth-card">
+            <div class="logo auth-logo">hyx</div>
+            <h1 class="auth-title">Login</h1>
+            <p class="auth-sub">Acede ao teu espaço pessoal.</p>
+
+            <form id="login-form" class="auth-form">
+                <label class="auth-label">Email</label>
+                <input type="email" name="email" class="input-minimal" placeholder="teu@email.com" required>
+
+                <label class="auth-label">Password</label>
+                <input type="password" name="password" class="input-minimal" placeholder="••••••••" required>
+
+                <button type="submit" class="btn-submit auth-submit">Entrar</button>
+                <div class="auth-success" id="login-success"></div>
+                <div class="auth-error" id="login-error"></div>
+            </form>
+
+            <div class="auth-footer">
+                <span>Não tens conta?</span>
+                <a href="/register">Criar conta</a>
+            </div>
+        </div>
+    </div>
+    <script src="/js/auth.js"></script>
+</body>
+</html>

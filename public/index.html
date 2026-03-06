@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>hyx | Personal Space</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="theme-toggle" id="theme-btn" onclick="toggleDarkMode()">Dark Mode</div>
+
+    <nav>
+        <div class="logo">Hyx's</div>
+        <div class="profile-card" id="user-profile">
+            <div class="profile-name" id="profile-name">User</div>
+            <div class="profile-sub">Welcome back</div>
+            <button class="profile-logout" id="logout-btn" type="button">Logout</button>
+        </div>
+        <div class="nav-item active" onclick="showSection('overview', this)">Overview</div>
+        <div class="nav-item" onclick="showSection('journal', this)">Journal</div>
+        <div class="nav-item" onclick="showSection('tasks', this)">Tasks</div>
+
+        <div class="sidebar-widget" id="system-status">
+            <div class="widget-title">SYSTEM STATUS</div>
+            <div class="status-row">
+                <span class="label">Neural Load</span>
+                <span class="value" id="neural-load-value">42%</span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar" id="neural-load-bar" style="width:42%"></div>
+            </div>
+            <div class="status-row">
+                <span class="label">Daily Uptime</span>
+                <span class="value" id="daily-uptime">0h</span>
+            </div>
+        </div>
+
+        <div class="sidebar-widget" id="mini-day-picker">
+            <div class="widget-title">DAY PICKER</div>
+            <div class="day-strip" aria-label="Week days">
+                <span data-day="1">M</span>
+                <span data-day="2">T</span>
+                <span data-day="3">W</span>
+                <span data-day="4">T</span>
+                <span data-day="5">F</span>
+                <span data-day="6">S</span>
+                <span data-day="0">S</span>
+            </div>
+        </div>
+
+        <div class="sidebar-widget sidebar-actions">
+            <div class="widget-title">QUICK ACTIONS</div>
+            <button class="quick-btn" id="quick-sync-btn" type="button">Quick Sync</button>
+            <button class="icon-btn" id="reset-view-btn" type="button" aria-label="Reset View">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 12a9 9 0 1 0 3-6.7" />
+                    <path d="M3 3v6h6" />
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <main>
+        <div id="section-overview" class="content-section active">
+             <div class="dashboard-grid">
+                <div class="card">
+                    <h2>Recent Mindset</h2>
+                    <div id="overview-recent" style="color: var(--text-dim); font-size: 14px;">Nada registado.</div>
+                </div>
+                <div class="card">
+                    <h2>Daily Status</h2>
+                    <div style="font-size: 32px; font-weight: 800; color: var(--accent);" id="task-count">0</div>
+                    <div style="font-size: 10px; opacity: 0.6;">TASKS COMPLETED</div>
+                </div>
+                <div class="card" id="productivity-card">
+                    <h2>Productivity</h2>
+                    <div class="prod-row">
+                        <span>Tasks Today</span>
+                        <strong id="prod-today">0</strong>
+                    </div>
+                    <div class="prod-row">
+                        <span>Active Tasks</span>
+                        <strong id="prod-active">0</strong>
+                    </div>
+                    <div class="prod-row">
+                        <span>Habit Streak</span>
+                        <strong id="prod-streak">0 days</strong>
+                    </div>
+                    <div class="prod-row">
+                        <span>Focus Score</span>
+                        <strong id="prod-focus">0%</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-journal" class="content-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h2>Daily Journal</h2>
+                    <div class="journal-inputs-container">
+                        <input type="text" id="journalTitle" class="input-minimal-journal" placeholder="Título do tópico...">
+                        <textarea id="journalContent" class="input-minimal-journal" style="min-height:80px; resize:none;" placeholder="Desenvolve o pensamento..."></textarea>
+                    </div>
+                    <div style="display:flex; justify-content: flex-end; margin-top: 10px;">
+                        <button class="btn-submit" onclick="saveData('journal')">Submit Journal</button>
+                    </div>
+                    <div id="list-journal" class="entries-container"></div>
+                </div>
+                <div class="card">
+                    <h2>Gratitude</h2>
+                    <div class="side-input-group">
+                        <input type="text" id="gratidaoContent" class="input-minimal" placeholder="Grato por..." onkeypress="if(event.key==='Enter') saveData('gratidao')">
+                        <button class="btn-submit" onclick="saveData('gratidao')">+</button>
+                    </div>
+                    <div id="list-gratidao" class="entries-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-tasks" class="content-section">
+            <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+                <div class="card">
+                    <h2>Intentions & Tasks</h2>
+                    <div class="task-inputs-container">
+                        <input type="text" id="tarefaTitle" class="input-minimal" placeholder="Título da intenção..." onkeypress="if(event.key==='Enter') saveData('tarefa')">
+                        <textarea id="tarefaContent" class="input-minimal task-body" rows="3" placeholder="Detalhes ou subtítulo..." onkeypress="if(event.key==='Enter') saveData('tarefa')"></textarea>
+                        <div class="task-actions">
+                            <button class="btn-submit" onclick="saveData('tarefa')">Add Task</button>
+                        </div>
+                    </div>
+                    <div id="list-tarefa" class="entries-container"></div>
+                </div>
+                <div class="card" id="habits-card">
+                    <h2>Habits</h2>
+                    <div class="side-input-group">
+                        <input type="text" id="habit-name" class="input-minimal" placeholder="Novo hábito..." onkeypress="if(event.key==='Enter') addHabit()">
+                        <button class="btn-submit" onclick="addHabit()">Add Habit</button>
+                    </div>
+                    <div id="habit-list" class="entries-container"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
