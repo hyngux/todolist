@@ -1,21 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0a84ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>hyx | Personal Space</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/hogrider.png">
+    <link rel="icon" type="image/png" href="/icons/hogrider.png">
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
-    <button
-        class="theme-toggle"
-        id="theme-btn"
-        type="button"
-        aria-label="Toggle dark mode"
-        aria-pressed="false"
-        onclick="toggleDarkMode()"
-    >
+    <button class="theme-toggle" id="theme-btn" type="button" aria-label="Toggle dark mode" aria-pressed="false"
+        onclick="toggleDarkMode()">
         <span class="toggle-track" aria-hidden="true">
             <span class="toggle-thumb"></span>
         </span>
@@ -37,12 +39,15 @@
                     <div class="profile-sub" id="profile-sub">Welcome back</div>
                 </div>
                 <div class="profile-actions">
-                    <button class="profile-icon-btn" id="profile-settings-btn" type="button" aria-label="Profile settings" aria-expanded="false">
+                    <a class="profile-icon-btn" id="profile-settings-btn" href="/settings"
+                        aria-label="Open settings page">
                         <svg viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1A1.7 1.7 0 0 0 10 3.1V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path>
+                            <path
+                                d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1A1.7 1.7 0 0 0 10 3.1V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z">
+                            </path>
                         </svg>
-                    </button>
+                    </a>
                     <button class="profile-icon-btn profile-logout" id="logout-btn" type="button" aria-label="Logout">
                         <svg viewBox="0 0 24 24">
                             <path d="M14 7v-3h-9v16h9v-3"></path>
@@ -83,7 +88,27 @@
 
         <div class="sidebar-widget" id="mini-day-picker">
             <div class="widget-title">Calendar</div>
-            <button class="btn-ghost calendar-open-link" id="calendar-open-link" type="button">Open Full Calendar</button>
+            <button class="btn-ghost calendar-open-link" id="calendar-open-link" type="button">Open Full
+                Calendar</button>
+        </div>
+
+        <div class="sidebar-widget" id="notification-widget">
+            <div class="widget-title">Notifications</div>
+            <div class="notification-controls">
+                <button class="notification-bell" id="enable-notifications-btn" type="button" aria-label="Enable notifications">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M15 17h5l-1.4-1.4a2 2 0 0 1-.6-1.4V11a6 6 0 0 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
+                        <path d="M9 17a3 3 0 0 0 6 0"></path>
+                    </svg>
+                    <span class="notification-indicator" id="notification-indicator" aria-hidden="true"></span>
+                </button>
+                <button class="notification-test" id="test-notification-btn" type="button" aria-label="Send test notification">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 11l18-8-8 18-2.4-6.6L3 11z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="notification-status" id="notification-status">Off</div>
         </div>
 
     </nav>
@@ -91,9 +116,24 @@
     <main>
         <div class="section-commandbar" aria-label="Sections">
             <div class="section-pills">
-                <button class="section-pill active" type="button" data-section="overview">Overview</button>
-                <button class="section-pill" type="button" data-section="journal">Journal</button>
-                <button class="section-pill" type="button" data-section="tasks">Tasks</button>
+                <button class="section-pill active" type="button" data-section="overview" aria-label="Overview">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 11l9-8 9 8"></path>
+                        <path d="M5 10v10h14V10"></path>
+                    </svg>
+                </button>
+                <button class="section-pill" type="button" data-section="journal" aria-label="Journal">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 3h9l3 3v15H6z"></path>
+                        <path d="M15 3v4h4"></path>
+                    </svg>
+                </button>
+                <button class="section-pill" type="button" data-section="tasks" aria-label="Tasks">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 11l2 2 4-4"></path>
+                        <rect x="4" y="4" width="16" height="16" rx="3"></rect>
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -110,10 +150,11 @@
                     </div>
                 </div>
             </div>
-             <div class="dashboard-grid overview-top-grid">
+            <div class="dashboard-grid overview-top-grid">
                 <div class="card">
                     <h2>Recent Mindset</h2>
-                    <div id="overview-recent" style="color: var(--text-dim); font-size: 14px;">Nada registado.</div>
+                    <div id="overview-recent" style="color: var(--text-dim); font-size: 14px;">Nothing written down yet.
+                    </div>
                 </div>
                 <div class="card">
                     <h2>Daily Status</h2>
@@ -157,7 +198,8 @@
                         <span class="today-inline-status" id="today-journal-status">Not saved yet</span>
                     </div>
                     <p class="today-subtitle">Short reflection about mood, wins, and lessons.</p>
-                    <textarea id="today-journal-input" class="input-minimal today-textarea" placeholder="How did today feel?"></textarea>
+                    <textarea id="today-journal-input" class="input-minimal today-textarea"
+                        placeholder="How did today feel?"></textarea>
                     <div class="task-actions">
                         <button id="today-journal-save" class="btn-submit" type="button">Save Reflection</button>
                     </div>
@@ -168,7 +210,8 @@
                         <span class="today-inline-status" id="today-note-status">Not saved yet</span>
                     </div>
                     <p class="today-subtitle">Capture ideas before they disappear.</p>
-                    <textarea id="today-note-input" class="input-minimal today-textarea" placeholder="Capture quick thoughts..."></textarea>
+                    <textarea id="today-note-input" class="input-minimal today-textarea"
+                        placeholder="Capture quick thoughts..."></textarea>
                     <div class="task-actions">
                         <button id="today-note-save" class="btn-submit" type="button">Save Note</button>
                     </div>
@@ -182,7 +225,8 @@
                     <h2>Daily Journal</h2>
                     <div class="journal-inputs-container">
                         <input type="text" id="journalTitle" class="input-minimal-journal" placeholder="Title">
-                        <textarea id="journalContent" class="input-minimal-journal" style="min-height:80px; resize:none;" placeholder="Description"></textarea>
+                        <textarea id="journalContent" class="input-minimal-journal"
+                            style="min-height:80px; resize:none;" placeholder="Description"></textarea>
                     </div>
                     <div style="display:flex; justify-content: flex-end; margin-top: 10px;">
                         <button class="btn-submit" onclick="saveData('journal')">Submit Journal</button>
@@ -192,7 +236,8 @@
                 <div class="card">
                     <h2>Gratitude</h2>
                     <div class="side-input-group">
-                        <input type="text" id="gratidaoContent" class="input-minimal" placeholder="Grato por..." onkeypress="if(event.key==='Enter') saveData('gratidao')">
+                        <input type="text" id="gratidaoContent" class="input-minimal" placeholder="Grateful for"
+                            onkeypress="if(event.key==='Enter') saveData('gratidao')">
                         <button class="btn-submit" onclick="saveData('gratidao')">+</button>
                     </div>
                     <div id="list-gratidao" class="entries-container"></div>
@@ -203,10 +248,16 @@
         <div id="section-tasks" class="content-section">
             <div class="dashboard-grid" style="grid-template-columns: 1fr;">
                 <div class="card">
-                    <h2>Niyyah</h2>
+                    <h2>Tasks</h2>
                     <div class="task-inputs-container">
-                        <input type="text" id="tarefaTitle" class="input-minimal" placeholder="Title" onkeypress="if(event.key==='Enter') saveData('tarefa')">
-                        <textarea id="tarefaContent" class="input-minimal task-body" rows="3" placeholder="Description" onkeypress="if(event.key==='Enter') saveData('tarefa')"></textarea>
+                        <input type="text" id="tarefaTitle" class="input-minimal" placeholder="Title"
+                            onkeypress="if(event.key==='Enter') saveData('tarefa')">
+                        <textarea id="tarefaContent" class="input-minimal task-body" rows="3" placeholder="Description"
+                            onkeypress="if(event.key==='Enter') saveData('tarefa')"></textarea>
+                        <div class="side-input-group">
+                            <input type="date" id="tarefaDueDate" class="input-minimal" aria-label="Task due date">
+                            <input type="time" id="tarefaDueTime" class="input-minimal" aria-label="Task due time">
+                        </div>
                         <div class="task-actions">
                             <button class="btn-submit" onclick="saveData('tarefa')">Add Task</button>
                         </div>
@@ -216,7 +267,8 @@
                 <div class="card" id="habits-card">
                     <h2>Habits</h2>
                     <div class="side-input-group">
-                        <input type="text" id="habit-name" class="input-minimal" placeholder="New habit" onkeypress="if(event.key==='Enter') addHabit()">
+                        <input type="text" id="habit-name" class="input-minimal" placeholder="New habit"
+                            onkeypress="if(event.key==='Enter') addHabit()">
                         <button class="btn-submit" onclick="addHabit()">Add Habit</button>
                     </div>
                     <div id="habit-list" class="entries-container"></div>
@@ -225,7 +277,43 @@
         </div>
     </main>
 
-    <div class="confirm-modal" id="confirm-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="mobile-tabbar" id="mobile-tabbar" aria-label="App navigation">
+        <button class="mobile-tab" type="button" data-tab="overview" aria-label="Open overview section">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 11l9-8 9 8"></path>
+                <path d="M5 10v10h14V10"></path>
+            </svg>
+        </button>
+        <button class="mobile-tab" type="button" data-tab="journal" aria-label="Open journal section">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 3h9l3 3v15H6z"></path>
+                <path d="M15 3v4h4"></path>
+            </svg>
+        </button>
+        <button class="mobile-tab" type="button" data-tab="tasks" aria-label="Open tasks section">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 11l2 2 4-4"></path>
+                <rect x="4" y="4" width="16" height="16" rx="3"></rect>
+            </svg>
+        </button>
+        <a class="mobile-tab" data-tab="settings" href="/settings" aria-label="Open settings page">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                    d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1A1.7 1.7 0 0 0 10 3.1V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z">
+                </path>
+            </svg>
+        </a>
+        <button class="mobile-tab" type="button" data-tab="calendar" aria-label="Open calendar">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="3"></rect>
+                <path d="M8 3v4M16 3v4M3 10h18"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div class="confirm-modal" id="confirm-modal" aria-hidden="true" role="dialog" aria-modal="true"
+        aria-labelledby="confirm-title">
         <div class="confirm-panel">
             <h3 id="confirm-title">Confirmar ação</h3>
             <p id="confirm-message">Queres continuar?</p>
@@ -242,7 +330,8 @@
             <h3>Quick Capture</h3>
             <div class="quick-capture-grid">
                 <input id="quick-capture-task" class="input-minimal" type="text" placeholder="Quick task...">
-                <textarea id="quick-capture-note" class="input-minimal today-textarea" placeholder="Quick note..."></textarea>
+                <textarea id="quick-capture-note" class="input-minimal today-textarea"
+                    placeholder="Quick note..."></textarea>
             </div>
             <div class="confirm-actions">
                 <button class="btn-ghost" id="quick-capture-cancel" type="button">Cancel</button>
@@ -251,11 +340,13 @@
         </div>
     </div>
 
-    <div class="task-detail-modal" id="task-detail-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="task-detail-title">
+    <div class="task-detail-modal" id="task-detail-modal" aria-hidden="true" role="dialog" aria-modal="true"
+        aria-labelledby="task-detail-title">
         <div class="task-detail-panel">
             <div class="task-detail-head">
                 <h3 id="task-detail-title">Task Details</h3>
-                <button class="task-detail-close" id="task-detail-close" type="button" aria-label="Close task details">✕</button>
+                <button class="task-detail-close" id="task-detail-close" type="button"
+                    aria-label="Close task details">✕</button>
             </div>
             <div class="task-detail-meta" id="task-detail-meta">Today</div>
             <p class="task-detail-description" id="task-detail-description"></p>
@@ -264,5 +355,7 @@
 
     <script src="js/main.js"></script>
     <script src="js/quick-capture.js"></script>
+    <script src="js/notifications.js"></script>
 </body>
+
 </html>

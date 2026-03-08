@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS tasks (
     title VARCHAR(255),
     content TEXT NOT NULL,
     status TINYINT(1) DEFAULT 0,
+    due_at DATETIME NULL,
+    reminded_1h TINYINT(1) NOT NULL DEFAULT 0,
+    reminded_overdue TINYINT(1) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -42,6 +45,20 @@ CREATE TABLE IF NOT EXISTS habits (
     streak INT DEFAULT 0,
     last_completed DATE DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    endpoint TEXT NOT NULL,
+    p256dh VARCHAR(255) NOT NULL,
+    auth VARCHAR(255) NOT NULL,
+    subscription_json LONGTEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_push_endpoint (endpoint(191)),
+    INDEX idx_push_user (user_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

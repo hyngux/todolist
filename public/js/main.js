@@ -37,6 +37,31 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function buildDueAtFromInputs(dateValue, timeValue) {
+    if (!dateValue) return null;
+    const time = timeValue && /^\d{2}:\d{2}$/.test(timeValue) ? `${timeValue}:00` : '23:59:00';
+    return `${dateValue}T${time}`;
+}
+
+function splitDueAtForInputs(value) {
+    if (!value) return { date: '', time: '' };
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return { date: '', time: '' };
+    const d = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const t = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    return { date: d, time: t };
+}
+
+function setDefaultTaskDueInputs() {
+    const dateInput = document.getElementById('tarefaDueDate');
+    const timeInput = document.getElementById('tarefaDueTime');
+    if (!dateInput || !timeInput) return;
+    const now = new Date();
+    const plusHour = new Date(now.getTime() + 60 * 60 * 1000);
+    dateInput.value = `${plusHour.getFullYear()}-${String(plusHour.getMonth() + 1).padStart(2, '0')}-${String(plusHour.getDate()).padStart(2, '0')}`;
+    timeInput.value = `${String(plusHour.getHours()).padStart(2, '0')}:${String(plusHour.getMinutes()).padStart(2, '0')}`;
+}
+
 // Navegação
 function showSection(id, el) {
     document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
@@ -44,6 +69,7 @@ function showSection(id, el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     el.classList.add('active');
     syncSectionCommandbar(id);
+    syncMobileTabbar(id);
     
     if(id === 'overview') updateOverview();
     loadAll();
@@ -55,23 +81,35 @@ function syncSectionCommandbar(sectionId) {
     });
 }
 
+function syncMobileTabbar(sectionId) {
+    document.querySelectorAll('.mobile-tab').forEach(btn => {
+        const tab = btn.dataset.tab;
+        const active = tab === sectionId;
+        btn.classList.toggle('active', active);
+    });
+}
+
 // SALVAR DADOS
 async function saveData(cat) {
     const contentInput = document.getElementById(cat + 'Content');
     const titleInput = document.getElementById('journalTitle');
     const taskTitleInput = document.getElementById('tarefaTitle');
+    const taskDueDateInput = document.getElementById('tarefaDueDate');
+    const taskDueTimeInput = document.getElementById('tarefaDueTime');
     
     if (!contentInput) return;
     const content = contentInput.value;
     const title = cat === 'journal' ? titleInput.value : (cat === 'tarefa' ? (taskTitleInput ? taskTitleInput.value : null) : null);
+    const dueAt = cat === 'tarefa' ? buildDueAtFromInputs(taskDueDateInput ? taskDueDateInput.value : '', taskDueTimeInput ? taskDueTimeInput.value : '') : null;
 
     if(!content.trim()) return;
+    if (cat === 'tarefa' && !dueAt) return;
 
     try {
         const res = await authFetch('/api/entries', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ title, content, category: cat })
+            body: JSON.stringify({ title, content, category: cat, dueAt })
         });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
@@ -80,7 +118,10 @@ async function saveData(cat) {
 
         contentInput.value = '';
         if(titleInput && cat === 'journal') titleInput.value = '';
-        if(taskTitleInput && cat === 'tarefa') taskTitleInput.value = '';
+        if(taskTitleInput && cat === 'tarefa') {
+            taskTitleInput.value = '';
+            setDefaultTaskDueInputs();
+        }
         loadAll();
         updateOverview();
     } catch (err) {
@@ -105,6 +146,11 @@ async function loadList(cat) {
             const date = new Date(e.created_at);
             const dStr = date.toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit'});
             const tStr = date.toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit'});
+            const dueDate = e.due_at ? new Date(e.due_at) : null;
+            const dueStr = dueDate && !Number.isNaN(dueDate.getTime())
+                ? dueDate.toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                : null;
+            const dueParts = splitDueAtForInputs(e.due_at);
             
             const hasBody = (cat === 'journal' || cat === 'tarefa');
             const displayTitle = (hasBody && e.title) ? e.title : e.content;
@@ -120,6 +166,7 @@ async function loadList(cat) {
                             <span class="entry-text" style="${e.status == 1 ? 'text-decoration:line-through;opacity:0.5' : ''}">${safeDisplayTitle}</span>
                         </div>
                         <div class="entry-meta">
+                            ${cat === 'tarefa' && dueStr ? `<span class="badge-time">${dueStr}</span>` : ''}
                             <span class="badge-date">${dStr}</span>
                             <span class="badge-time">${tStr}</span>
                             <button class="btn-edit" onclick="event.stopPropagation(); startEdit(${e.id}, '${cat}')">EDIT</button>
@@ -131,6 +178,12 @@ async function loadList(cat) {
                         ${(cat === 'journal' || cat === 'tarefa') ? `
                             <input type="text" class="input-minimal edit-title" value="${safeTitle}" placeholder="Título...">
                             <textarea class="input-minimal edit-body" rows="3" placeholder="Conteúdo...">${safeContent}</textarea>
+                            ${cat === 'tarefa' ? `
+                                <div class="side-input-group">
+                                    <input type="date" class="input-minimal edit-due-date" value="${dueParts.date}">
+                                    <input type="time" class="input-minimal edit-due-time" value="${dueParts.time}">
+                                </div>
+                            ` : ''}
                         ` : `
                             <input type="text" class="input-minimal edit-content" value="${safeContent}" placeholder="Editar...">
                         `}
@@ -242,9 +295,12 @@ async function saveEdit(id, cat) {
     if (cat === 'journal' || cat === 'tarefa') {
         const titleEl = row.querySelector('.edit-title');
         const bodyEl = row.querySelector('.edit-body');
+        const dueDateEl = row.querySelector('.edit-due-date');
+        const dueTimeEl = row.querySelector('.edit-due-time');
         payload = {
             title: titleEl ? titleEl.value.trim() : '',
-            content: bodyEl ? bodyEl.value.trim() : ''
+            content: bodyEl ? bodyEl.value.trim() : '',
+            dueAt: cat === 'tarefa' ? buildDueAtFromInputs(dueDateEl ? dueDateEl.value : '', dueTimeEl ? dueTimeEl.value : '') : null
         };
     } else {
         const contentEl = row.querySelector('.edit-content');
@@ -735,6 +791,7 @@ function writeProfilePrefs(prefs) {
 
 function initProfileSettings() {
     const settingsBtn = document.getElementById('profile-settings-btn');
+    if (settingsBtn && settingsBtn.tagName === 'A') return;
     const panel = document.getElementById('profile-settings');
     const saveBtn = document.getElementById('profile-settings-save');
     const inputName = document.getElementById('profile-settings-name');
@@ -810,7 +867,29 @@ function initSectionCommandbar() {
     const activeSection = document.querySelector('.content-section.active');
     if (activeSection && activeSection.id.startsWith('section-')) {
         syncSectionCommandbar(activeSection.id.replace('section-', ''));
+        syncMobileTabbar(activeSection.id.replace('section-', ''));
     }
+}
+
+function initMobileTabbar() {
+    const tabbar = document.getElementById('mobile-tabbar');
+    if (!tabbar) return;
+
+    tabbar.querySelectorAll('.mobile-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.dataset.tab;
+            if (tab === 'calendar') {
+                window.location.href = '/calendar.html';
+                return;
+            }
+            if (tab === 'settings') {
+                window.location.href = '/settings';
+                return;
+            }
+            const navItem = document.querySelector(`.nav-item[onclick*="${tab}"]`);
+            if (tab && navItem) showSection(tab, navItem);
+        });
+    });
 }
 
 const _loadList = loadList;
@@ -840,10 +919,12 @@ deleteItem = async function(id, cat) {
 };
 
 window.addEventListener("load", () => {
+    setDefaultTaskDueInputs();
     loadUserProfile();
     initLogout();
     initProfileSettings();
     initSectionCommandbar();
+    initMobileTabbar();
     initCalendarShortcut();
     renderHabits();
     updateProductivityCard();

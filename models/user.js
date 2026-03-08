@@ -15,8 +15,26 @@ function findById(id) {
     return db.promise().query(sql, [id]);
 }
 
+function findAuthById(id) {
+    const sql = 'SELECT id, username, email, password_hash FROM users WHERE id = ? LIMIT 1';
+    return db.promise().query(sql, [id]);
+}
+
+function updateUsername(id, username) {
+    const sql = 'UPDATE users SET username = ? WHERE id = ?';
+    return db.promise().query(sql, [username, id]);
+}
+
+function updatePasswordHash(id, passwordHash) {
+    const sql = 'UPDATE users SET password_hash = ? WHERE id = ?';
+    return db.promise().query(sql, [passwordHash, id]);
+}
+
 module.exports = {
     createUser,
     findByEmail,
-    findById
+    findById,
+    findAuthById,
+    updateUsername,
+    updatePasswordHash
 };

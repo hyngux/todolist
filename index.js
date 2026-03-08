@@ -6,6 +6,8 @@ const MySQLStore = require('express-mysql-session')(session);
 const db = require('./models/db');
 const authRoutes = require('./auth/routes');
 const apiRoutes = require('./routes/api');
+const { getPublicKey } = require('./lib/pushConfig');
+const { processCalendarReminders } = require('./lib/calendarReminderWorker');
 const { requireAuth, attachUser } = require('./middleware/auth');
 
 const app = express();
@@ -43,6 +45,9 @@ db.getConnection((err, connection) => {
 });
 
 app.use('/auth', authRoutes);
+app.get('/push/public-key', (req, res) => {
+    res.json({ publicKey: getPublicKey() });
+});
 app.use('/api', requireAuth, apiRoutes);
 
 app.get('/login', (req, res) => {
@@ -51,6 +56,11 @@ app.get('/login', (req, res) => {
 
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'register', 'index.html'));
+});
+
+app.get('/settings', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    res.sendFile(path.join(__dirname, 'public', 'settings.html'));
 });
 
 app.get('/', (req, res) => {
@@ -69,4 +79,16 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('HYXMIND SYSTEM ONLINE');
     console.log(`Local: http://localhost:${PORT}`);
     console.log(`Network: http://0.0.0.0:${PORT}`);
+
+    setTimeout(() => {
+        processCalendarReminders().catch(err => {
+            console.error('Initial reminder worker run failed:', err.message);
+        });
+    }, 5000);
+
+    setInterval(() => {
+        processCalendarReminders().catch(err => {
+            console.error('Reminder worker run failed:', err.message);
+        });
+    }, 60 * 1000);
 });

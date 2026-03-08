@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0a84ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>HYX | Settings</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/hogrider.png">
+    <link rel="icon" type="image/png" href="/icons/hogrider.png">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <button class="theme-toggle" id="theme-btn" type="button" aria-label="Toggle dark mode" aria-pressed="false">
+        <span class="toggle-track" aria-hidden="true">
+            <span class="toggle-thumb"></span>
+        </span>
+        <span class="toggle-text">Dark</span>
+    </button>
+
+    <main class="settings-main">
+        <section class="settings-shell">
+            <div class="settings-topbar">
+                <a class="settings-back" href="/" aria-label="Back to dashboard">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M15 18l-6-6 6-6"></path>
+                    </svg>
+                </a>
+                <h1>Settings</h1>
+            </div>
+
+            <div class="settings-grid">
+                <article class="card settings-card">
+                    <h2>Profile</h2>
+                    <p class="settings-subtitle">Manage your account information.</p>
+                    <label class="settings-label" for="settings-username">Display Name</label>
+                    <input id="settings-username" class="input-minimal" type="text" placeholder="Your name">
+                    <label class="settings-label" for="settings-email">Email</label>
+                    <input id="settings-email" class="input-minimal" type="email" readonly>
+                    <div class="task-actions">
+                        <button id="settings-save-profile" class="btn-submit" type="button">Save Profile</button>
+                    </div>
+                </article>
+
+                <article class="card settings-card">
+                    <h2>Security</h2>
+                    <p class="settings-subtitle">Change your password securely.</p>
+                    <label class="settings-label" for="settings-current-password">Current Password</label>
+                    <input id="settings-current-password" class="input-minimal" type="password"
+                        placeholder="Current password">
+                    <label class="settings-label" for="settings-new-password">New Password</label>
+                    <input id="settings-new-password" class="input-minimal" type="password" placeholder="New password">
+                    <label class="settings-label" for="settings-confirm-password">Confirm Password</label>
+                    <input id="settings-confirm-password" class="input-minimal" type="password"
+                        placeholder="Confirm password">
+                    <div class="task-actions">
+                        <button id="settings-save-password" class="btn-submit" type="button">Update Password</button>
+                    </div>
+                </article>
+            </div>
+
+            <div class="card settings-card settings-feedback-card">
+                <div id="settings-feedback" class="settings-feedback">Ready</div>
+                <button id="settings-logout" class="btn-ghost" type="button">Logout</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="/js/settings.js"></script>
+</body>
+
+</html>

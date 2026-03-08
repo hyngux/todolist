@@ -1,9 +1,13 @@
 const express = require('express');
 const entries = require('../models/entries');
 const habits = require('../models/habits');
+const calendarTasks = require('../models/calendarTasks');
+const pushSubscriptions = require('../models/pushSubscriptions');
+const { webPush, getPublicKey } = require('../lib/pushConfig');
 
 const router = express.Router();
 const DAY_MS = 24 * 60 * 60 * 1000;
+
 
 function parseHabitDate(value) {
     if (!value) return null;
@@ -55,6 +59,27 @@ function buildHabitView(habit, now = new Date()) {
     return view;
 }
 
+async function sendPushToUser(userId, payload) {
+    const subscriptions = await pushSubscriptions.listSubscriptions(userId);
+    if (!subscriptions.length) return 0;
+
+    const body = JSON.stringify(payload);
+    await Promise.all(subscriptions.map(async (subscription) => {
+        try {
+            await webPush.sendNotification(subscription, body);
+        } catch (err) {
+            const status = err?.statusCode;
+            if (status === 404 || status === 410) {
+                await pushSubscriptions.removeSubscriptionByEndpoint(subscription.endpoint);
+                return;
+            }
+            throw err;
+        }
+    }));
+
+    return subscriptions.length;
+}
+
 router.get('/entries/:category', async (req, res) => {
     try {
         const [results] = await entries.listEntries(req.user.id, req.params.category);
@@ -66,10 +91,22 @@ router.get('/entries/:category', async (req, res) => {
 });
 
 router.post('/entries', async (req, res) => {
-    const { title, content, category } = req.body;
+    const { title, content, category, dueAt } = req.body;
     if (!content || !category) return res.status(400).json({ error: 'Invalid input' });
     try {
-        const [result] = await entries.createEntry(req.user.id, title, content, category);
+        const [result] = await entries.createEntry(req.user.id, title, content, category, dueAt);
+
+        if (category === 'tarefa') {
+            const taskLabel = String(title || content || 'Task').trim();
+            sendPushToUser(req.user.id, {
+                title: 'New Task Created',
+                body: `"${taskLabel}" was added successfully.`,
+                url: '/'
+            }).catch(err => {
+                console.error('Failed to send task-created push:', err.message);
+            });
+        }
+
         res.status(201).json({ id: result.insertId, title, content, category });
     } catch (err) {
         console.error('Failed to save entry:', err.message);
@@ -90,10 +127,10 @@ router.patch('/entries/:id/toggle', async (req, res) => {
 });
 
 router.patch('/entries/:id', async (req, res) => {
-    const { title, content, category } = req.body;
+    const { title, content, category, dueAt } = req.body;
     if (!content || !category) return res.status(400).json({ error: 'Invalid input' });
     try {
-        await entries.updateEntry(req.user.id, req.params.id, title, content, category);
+        await entries.updateEntry(req.user.id, req.params.id, title, content, category, dueAt);
         res.sendStatus(200);
     } catch (err) {
         console.error('Failed to update entry:', err.message);
@@ -110,6 +147,66 @@ router.delete('/entries/:id', async (req, res) => {
     } catch (err) {
         console.error('Failed to delete entry:', err.message);
         res.status(500).json({ error: err.message || 'Failed to delete entry' });
+    }
+});
+
+router.get('/calendar/tasks', async (req, res) => {
+    const month = String(req.query.month || '').trim();
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+        return res.status(400).json({ error: 'Invalid month format. Use YYYY-MM' });
+    }
+    try {
+        const rows = await calendarTasks.listTasksForMonth(req.user.id, month);
+        res.json(rows);
+    } catch (err) {
+        console.error('Failed to list calendar tasks:', err.message);
+        res.status(500).json({ error: 'Failed to list calendar tasks' });
+    }
+});
+
+router.post('/calendar/tasks', async (req, res) => {
+    const title = String(req.body?.title || '').trim();
+    const description = String(req.body?.description || '').trim();
+    const dueAt = String(req.body?.dueAt || '').trim();
+    if (!title || !dueAt) {
+        return res.status(400).json({ error: 'Title and dueAt are required' });
+    }
+
+    try {
+        const id = await calendarTasks.createTask(req.user.id, { title, description, dueAt });
+        sendPushToUser(req.user.id, {
+            title: 'Calendar Task Created',
+            body: `"${title}" was added to calendar.`,
+            url: '/calendar.html'
+        }).catch(err => {
+            console.error('Failed to send calendar-created push:', err.message);
+        });
+
+        res.status(201).json({ id, title, description, due_at: dueAt, done: 0 });
+    } catch (err) {
+        console.error('Failed to create calendar task:', err.message);
+        res.status(500).json({ error: 'Failed to create calendar task' });
+    }
+});
+
+router.patch('/calendar/tasks/:id', async (req, res) => {
+    const done = Boolean(req.body?.done);
+    try {
+        await calendarTasks.setDone(req.user.id, req.params.id, done);
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('Failed to update calendar task:', err.message);
+        res.status(500).json({ error: 'Failed to update calendar task' });
+    }
+});
+
+router.delete('/calendar/tasks/:id', async (req, res) => {
+    try {
+        await calendarTasks.deleteTask(req.user.id, req.params.id);
+        res.sendStatus(204);
+    } catch (err) {
+        console.error('Failed to delete calendar task:', err.message);
+        res.status(500).json({ error: 'Failed to delete calendar task' });
     }
 });
 
@@ -174,6 +271,60 @@ router.delete('/habits/:id', async (req, res) => {
         res.sendStatus(204);
     } catch (err) {
         res.status(500).json({ error: 'Failed to delete habit' });
+    }
+});
+
+router.get('/push/public-key', (req, res) => {
+    res.json({ publicKey: getPublicKey() });
+});
+
+router.post('/push/subscribe', async (req, res) => {
+    const subscription = req.body?.subscription;
+    if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+        return res.status(400).json({ error: 'Invalid subscription payload' });
+    }
+
+    try {
+        await pushSubscriptions.upsertSubscription(req.user.id, subscription);
+        res.status(201).json({ ok: true });
+    } catch (err) {
+        console.error('Failed to save push subscription:', err.message);
+        res.status(500).json({ error: 'Failed to save push subscription' });
+    }
+});
+
+router.post('/push/unsubscribe', async (req, res) => {
+    const endpoint = String(req.body?.endpoint || '').trim();
+    if (!endpoint) return res.status(400).json({ error: 'Missing endpoint' });
+
+    try {
+        await pushSubscriptions.removeSubscription(req.user.id, endpoint);
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('Failed to remove push subscription:', err.message);
+        res.status(500).json({ error: 'Failed to remove push subscription' });
+    }
+});
+
+router.post('/push/test', async (req, res) => {
+    try {
+        const subscriptions = await pushSubscriptions.listSubscriptions(req.user.id);
+        if (!subscriptions.length) {
+            return res.status(404).json({ error: 'No push subscriptions for this user' });
+        }
+
+        const payload = {
+            title: req.body?.title || 'HYX Reminder',
+            body: req.body?.body || 'This is your test notification.',
+            url: req.body?.url || '/'
+        };
+
+        await sendPushToUser(req.user.id, payload);
+
+        res.json({ ok: true, sent: subscriptions.length });
+    } catch (err) {
+        console.error('Failed to send test push:', err.message);
+        res.status(500).json({ error: 'Failed to send push notification' });
     }
 });
 

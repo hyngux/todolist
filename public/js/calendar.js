@@ -1,6 +1,4 @@
 (function initCalendarPage() {
-    const CALENDAR_STORAGE_KEY = 'hyxmind_calendar_tasks';
-
     const monthEl = document.getElementById('calendar-page-month');
     const gridEl = document.getElementById('calendar-large-grid');
     const prevBtn = document.getElementById('calendar-page-prev');
@@ -14,7 +12,6 @@
     const themeBtn = document.getElementById('theme-btn');
 
     if (!monthEl || !gridEl || !prevBtn || !nextBtn || !sideDateEl || !titleInput || !timeInput || !descInput || !saveBtn || !listEl) return;
-    ensureAuthenticated();
 
     setupTheme(themeBtn);
 
@@ -23,8 +20,40 @@
         viewYear: now.getFullYear(),
         viewMonth: now.getMonth(),
         selectedDate: toDateKey(now),
-        data: readCalendarStorage()
+        data: {}
     };
+
+    bootstrap();
+
+    async function bootstrap() {
+        const ok = await ensureAuthenticated();
+        if (!ok) return;
+        await loadMonthData();
+        renderCalendar();
+        renderDayPanel();
+    }
+
+    async function loadMonthData() {
+        const month = `${state.viewYear}-${String(state.viewMonth + 1).padStart(2, '0')}`;
+        const res = await fetch(`/api/calendar/tasks?month=${month}`);
+        if (!res.ok) throw new Error('Failed to load calendar tasks');
+        const rows = await res.json();
+        const grouped = {};
+        rows.forEach(row => {
+            const dueAt = row.due_at ? new Date(row.due_at) : null;
+            if (!dueAt || Number.isNaN(dueAt.getTime())) return;
+            const key = toDateKey(dueAt);
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push({
+                id: row.id,
+                title: row.title || 'Untitled',
+                description: row.description || '',
+                done: Boolean(row.done),
+                dueAt: dueAt.toISOString()
+            });
+        });
+        state.data = grouped;
+    }
 
     function renderCalendar() {
         const firstDay = new Date(state.viewYear, state.viewMonth, 1);
@@ -36,9 +65,7 @@
         gridEl.innerHTML = labels.map(label => `<div class="calendar-large-weekday">${label}</div>`).join('');
 
         const cells = [];
-        for (let i = 0; i < startWeekday; i += 1) {
-            cells.push('<div class="calendar-large-empty"></div>');
-        }
+        for (let i = 0; i < startWeekday; i += 1) cells.push('<div class="calendar-large-empty"></div>');
 
         for (let day = 1; day <= totalDays; day += 1) {
             const date = new Date(state.viewYear, state.viewMonth, day);
@@ -76,8 +103,8 @@
             return;
         }
 
-        listEl.innerHTML = items.map((item, idx) => {
-            const due = parsePlannerDueDate(item, state.selectedDate);
+        listEl.innerHTML = items.map((item) => {
+            const due = new Date(item.dueAt);
             const late = !item.done && due.getTime() < Date.now();
             return `
                 <div class="calendar-item ${item.done ? 'done' : ''}">
@@ -85,87 +112,97 @@
                     <div class="calendar-item-desc">${escapeHtml(item.description || '')}</div>
                     <div class="calendar-item-meta ${late ? 'late' : 'due'}">${item.done ? 'Done' : `${late ? 'Late' : 'Due'} · ${formatPlannerDue(due)}`}</div>
                     <div class="calendar-item-actions">
-                        <button class="btn-ghost calendar-item-toggle" type="button" data-toggle="${idx}">${item.done ? 'Undo' : 'Done'}</button>
-                        <button class="calendar-item-del" type="button" data-del="${idx}">Delete</button>
+                        <button class="btn-ghost calendar-item-toggle" type="button" data-id="${item.id}" data-done="${item.done ? '1' : '0'}">${item.done ? 'Undo' : 'Done'}</button>
+                        <button class="calendar-item-del" type="button" data-id="${item.id}">Delete</button>
                     </div>
                 </div>
             `;
         }).join('');
 
         listEl.querySelectorAll('.calendar-item-toggle').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const idx = Number(btn.dataset.toggle);
-                const list = state.data[state.selectedDate] || [];
-                if (!list[idx]) return;
-                list[idx].done = !list[idx].done;
-                state.data[state.selectedDate] = list;
-                writeCalendarStorage(state.data);
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const done = btn.dataset.done !== '1';
+                await fetch(`/api/calendar/tasks/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ done })
+                });
+                await loadMonthData();
                 renderCalendar();
                 renderDayPanel();
             });
         });
 
         listEl.querySelectorAll('.calendar-item-del').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const idx = Number(btn.dataset.del);
-                const list = state.data[state.selectedDate] || [];
-                list.splice(idx, 1);
-                if (!list.length) delete state.data[state.selectedDate];
-                else state.data[state.selectedDate] = list;
-                writeCalendarStorage(state.data);
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                await fetch(`/api/calendar/tasks/${id}`, { method: 'DELETE' });
+                await loadMonthData();
                 renderCalendar();
                 renderDayPanel();
             });
         });
     }
 
-    saveBtn.addEventListener('click', () => {
+    saveBtn.addEventListener('click', async () => {
         const title = titleInput.value.trim();
         const description = descInput.value.trim();
         if (!title && !description) return;
-        const list = state.data[state.selectedDate] || [];
-        list.push({
-            title: title || 'Untitled',
-            description,
-            done: false,
-            dueAt: buildDueAt(state.selectedDate, timeInput.value)
+
+        const dueAt = buildDueAt(state.selectedDate, timeInput.value);
+        const res = await fetch('/api/calendar/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: title || 'Untitled',
+                description,
+                dueAt
+            })
         });
-        state.data[state.selectedDate] = list;
-        writeCalendarStorage(state.data);
+        if (!res.ok) return;
+
         titleInput.value = '';
         descInput.value = '';
         timeInput.value = '';
+        await loadMonthData();
         renderCalendar();
         renderDayPanel();
     });
 
-    prevBtn.addEventListener('click', () => {
+    prevBtn.addEventListener('click', async () => {
         state.viewMonth -= 1;
         if (state.viewMonth < 0) {
             state.viewMonth = 11;
             state.viewYear -= 1;
         }
+        await loadMonthData();
         renderCalendar();
+        renderDayPanel();
     });
 
-    nextBtn.addEventListener('click', () => {
+    nextBtn.addEventListener('click', async () => {
         state.viewMonth += 1;
         if (state.viewMonth > 11) {
             state.viewMonth = 0;
             state.viewYear += 1;
         }
+        await loadMonthData();
         renderCalendar();
+        renderDayPanel();
     });
-
-    renderCalendar();
-    renderDayPanel();
 
     async function ensureAuthenticated() {
         try {
             const res = await fetch('/auth/me');
-            if (!res.ok) window.location.href = '/login';
+            if (!res.ok) {
+                window.location.href = '/login';
+                return false;
+            }
+            return true;
         } catch {
             window.location.href = '/login';
+            return false;
         }
     }
 
@@ -196,34 +233,6 @@
         }
     }
 
-    function readCalendarStorage() {
-        try {
-            const raw = JSON.parse(localStorage.getItem(CALENDAR_STORAGE_KEY) || '{}');
-            const normalized = {};
-            Object.keys(raw).forEach(key => {
-                const items = Array.isArray(raw[key]) ? raw[key] : [];
-                normalized[key] = items.map(item => normalizePlannerEntry(item, key));
-            });
-            return normalized;
-        } catch {
-            return {};
-        }
-    }
-
-    function writeCalendarStorage(data) {
-        try {
-            localStorage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(data));
-        } catch {}
-    }
-
-    function normalizePlannerEntry(item, dateKey) {
-        const title = item && item.title ? String(item.title) : 'Untitled';
-        const description = item && item.description ? String(item.description) : '';
-        const done = Boolean(item && item.done);
-        const dueAt = item && item.dueAt ? String(item.dueAt) : buildDueAt(dateKey, '');
-        return { title, description, done, dueAt };
-    }
-
     function toDateKey(date) {
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -234,13 +243,6 @@
     function buildDueAt(dateKey, hhmm) {
         const time = hhmm && /^\d{2}:\d{2}$/.test(hhmm) ? `${hhmm}:00` : '23:59:00';
         return `${dateKey}T${time}`;
-    }
-
-    function parsePlannerDueDate(item, dateKey) {
-        const fallback = new Date(buildDueAt(dateKey, ''));
-        if (!item || !item.dueAt) return fallback;
-        const d = new Date(item.dueAt);
-        return Number.isNaN(d.getTime()) ? fallback : d;
     }
 
     function formatPlannerDue(date) {
@@ -257,7 +259,7 @@
         const openItems = list.filter(item => !item.done);
         if (!openItems.length) return list.length ? 'done' : '';
         const dayKey = toDateKey(dayDate);
-        const hasLate = openItems.some(item => parsePlannerDueDate(item, dayKey).getTime() < Date.now());
+        const hasLate = openItems.some(item => new Date(item.dueAt || `${dayKey}T23:59:00`).getTime() < Date.now());
         return hasLate ? 'late' : 'due';
     }
 
